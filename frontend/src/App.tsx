@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from "react";
+import React, {useEffect,useMemo,useState} from "react";
 import {Routes,Route,Link,useLocation,useNavigate} from "react-router-dom";
 import {Search,Mic,Upload,ShieldCheck,GitCompare,ChevronRight,CheckCircle2,AlertTriangle,Info,ExternalLink,Languages,Menu,X,SlidersHorizontal,FileText,Lightbulb,Database,ArrowRight} from "lucide-react";
 import {api} from "./api";
@@ -37,7 +37,7 @@ function Layout({
       <nav className={mobile?"nav open":"nav"}>{nav.map(([path,key])=><Link key={path} onClick={()=>setMobile(false)} className={loc.pathname===path?"active":""} to={path}>{tx(lang,key)}</Link>)}</nav>
       <label className="lang"><Languages size={17}/><select value={lang} onChange={e=>setLang(e.target.value as Lang)} aria-label="Language">{languages.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}</select></label>
     </header>
-    <main>{/* page */}</main>
+    <main>{children}</main>
     <footer><span>BIS SENSOR</span><span>{tx(lang,"disclaimer")}</span></footer>
   </div>
 }
