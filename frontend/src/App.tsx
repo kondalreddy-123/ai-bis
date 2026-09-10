@@ -1,5 +1,8 @@
+import React, {
+  useEffect,
+  useState,
+} from "react";
 
-import React, { useEffect, useMemo, useState } from "react";
 import {
   Routes,
   Route,
@@ -27,118 +30,48 @@ import {
   Lightbulb,
   Database,
   ArrowRight,
-  RefreshCw,
-  Star,
-  Check,
 } from "lucide-react";
 
 import { api } from "./api";
-import { languages, Lang, tx } from "./i18n";
+import {
+  languages,
+  Lang,
+  tx,
+} from "./i18n";
 
-type Standard = any;
+
+// ======================================================
+// HELPERS
+// ======================================================
+
+function localizedStandard(
+  standard: any,
+  lang: Lang
+) {
+  const translation =
+    standard?.translations?.[lang];
+
+  return translation
+    ? {
+        ...standard,
+        title:
+          translation.title ||
+          standard.title,
+        scope:
+          translation.scope ||
+          standard.scope,
+      }
+    : standard;
+}
+
 
 const examplePrompt =
-  "Need applicable Indian standards for cement used in building construction.";
+  "Need standards for outdoor LED street lights for a government tender.";
 
-/* =========================================================
-   HELPERS
-========================================================= */
 
-function localizedStandard(s: any, lang: Lang) {
-  const tr = s?.translations?.[lang];
-
-  return tr
-    ? {
-        ...s,
-        title: tr.title,
-        scope: tr.scope,
-      }
-    : s;
-}
-
-function getStandardId(s: any) {
-  return s?.id || s?.standard_id || s?.standard?.id;
-}
-
-function getStandardNumber(s: any) {
-  return (
-    s?.is_number ||
-    s?.standard_number ||
-    s?.standard?.is_number ||
-    "IS Standard"
-  );
-}
-
-function getStandardTitle(s: any, lang: Lang) {
-  const standard = s?.standard || s;
-  return localizedStandard(standard, lang)?.title || "Indian Standard";
-}
-
-function getConfidence(item: any) {
-  return Number(
-    item?.confidence ??
-      item?.match_score ??
-      item?.applicability_score ??
-      item?.score ??
-      0
-  );
-}
-
-/* =========================================================
-   VOICE
-========================================================= */
-
-function startVoice(
-  setText: (x: string) => void,
-  lang: Lang,
-  onError?: (message: string) => void
-) {
-  const SR =
-    (window as any).SpeechRecognition ||
-    (window as any).webkitSpeechRecognition;
-
-  if (!SR) {
-    onError?.("Voice input is not supported by this browser.");
-    return;
-  }
-
-  try {
-    const recognition = new SR();
-
-    recognition.lang =
-      lang === "hi"
-        ? "hi-IN"
-        : lang === "te"
-        ? "te-IN"
-        : lang === "ta"
-        ? "ta-IN"
-        : lang === "kn"
-        ? "kn-IN"
-        : lang === "mr"
-        ? "mr-IN"
-        : lang === "bn"
-        ? "bn-IN"
-        : "en-IN";
-
-    recognition.interimResults = false;
-
-    recognition.onresult = (e: any) => {
-      setText(e.results[0][0].transcript);
-    };
-
-    recognition.onerror = () => {
-      onError?.("Voice input could not be completed.");
-    };
-
-    recognition.start();
-  } catch {
-    onError?.("Unable to start voice input.");
-  }
-}
-
-/* =========================================================
-   LAYOUT
-========================================================= */
+// ======================================================
+// LAYOUT
+// ======================================================
 
 function Layout({
   lang,
@@ -149,8 +82,10 @@ function Layout({
   setLang: (x: Lang) => void;
   children: React.ReactNode;
 }) {
-  const [mobile, setMobile] = useState(false);
-  const loc = useLocation();
+  const [mobile, setMobile] =
+    useState(false);
+
+  const location = useLocation();
 
   const nav = [
     ["/", "home"],
@@ -168,31 +103,61 @@ function Layout({
 
   return (
     <div className="app-shell">
+
       <header className="topbar">
-        <Link to="/" className="brand">
-          <span className="brand-mark">B</span>
-          <span>BIS SENSOR</span>
+
+        <Link
+          to="/"
+          className="brand"
+        >
+          <span className="brand-mark">
+            B
+          </span>
+
+          <span>
+            BIS SENSOR
+          </span>
         </Link>
 
         <button
           className="mobile-menu"
-          onClick={() => setMobile(!mobile)}
+          onClick={() =>
+            setMobile(!mobile)
+          }
           aria-label="Menu"
         >
           {mobile ? <X /> : <Menu />}
         </button>
 
-        <nav className={mobile ? "nav open" : "nav"}>
-          {nav.map(([path, key]) => (
-            <Link
-              key={path}
-              onClick={() => setMobile(false)}
-              className={loc.pathname === path ? "active" : ""}
-              to={path}
-            >
-              {tx(lang, key)}
-            </Link>
-          ))}
+        <nav
+          className={
+            mobile
+              ? "nav open"
+              : "nav"
+          }
+        >
+          {nav.map(
+            ([path, key]) => (
+              <Link
+                key={path}
+                to={path}
+                onClick={() =>
+                  setMobile(false)
+                }
+                className={
+                  location.pathname ===
+                  path
+                    ? "active"
+                    : ""
+                }
+              >
+                {tx(
+                  lang,
+                  key
+                )}
+              </Link>
+            )
+          )}
         </nav>
 
         <label className="lang">
@@ -200,138 +165,287 @@ function Layout({
 
           <select
             value={lang}
-            onChange={(e) => setLang(e.target.value as Lang)}
+            onChange={(e) =>
+              setLang(
+                e.target.value as Lang
+              )
+            }
             aria-label="Language"
           >
-            {languages.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
-            ))}
+            {languages.map(
+              (language) => (
+                <option
+                  key={language.code}
+                  value={language.code}
+                >
+                  {language.label}
+                </option>
+              )
+            )}
           </select>
         </label>
+
       </header>
 
-      <main>{children}</main>
+      <main>
+        {children}
+      </main>
 
       <footer>
         <span>BIS SENSOR</span>
-        <span>{tx(lang, "disclaimer")}</span>
+
+        <span>
+          {tx(
+            lang,
+            "disclaimer"
+          )}
+        </span>
       </footer>
+
     </div>
   );
 }
 
-/* =========================================================
-   HOME
-========================================================= */
 
-function Home({ lang }: { lang: Lang }) {
-  const [text, setText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState("");
+// ======================================================
+// HOME
+// ======================================================
 
-  const run = async () => {
-    setError("");
+function Home({
+  lang,
+}: {
+  lang: Lang;
+}) {
 
-    const input = text.trim() || examplePrompt;
+  const [
+    text,
+    setText,
+  ] = useState("");
 
-    setLoading(true);
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-    try {
-      const r = await api.analyze(input, lang);
-      setResult(r);
-    } catch (e: any) {
-      setError(e?.message || "Analysis failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [
+    result,
+    setResult,
+  ] = useState<any>(null);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const runAnalysis =
+    async () => {
+
+      setError("");
+      setLoading(true);
+
+      try {
+
+        const result =
+          await api.analyze(
+            text.trim() ||
+              examplePrompt,
+            lang
+          );
+
+        setResult(result);
+
+      } catch (error: any) {
+
+        console.error(error);
+
+        setError(
+          error?.message ||
+            "Analysis failed."
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
 
   return (
     <div className="page home">
+
       <section className="hero">
+
         <div className="eyebrow">
           <span className="live-dot" />
-          AI STANDARDS INTELLIGENCE
+
+          AI STANDARDS
+          INTELLIGENCE
         </div>
 
-        <h1>{tx(lang, "hero")}</h1>
+        <h1>
+          {tx(
+            lang,
+            "hero"
+          )}
+        </h1>
 
-        <p>{tx(lang, "heroSub")}</p>
+        <p>
+          {tx(
+            lang,
+            "heroSub"
+          )}
+        </p>
 
         <div className="hero-input">
+
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={tx(lang, "searchPlaceholder")}
-            aria-label={tx(lang, "searchPlaceholder")}
+            onChange={(e) =>
+              setText(
+                e.target.value
+              )
+            }
+            placeholder={tx(
+              lang,
+              "searchPlaceholder"
+            )}
+            aria-label={
+              tx(
+                lang,
+                "searchPlaceholder"
+              )
+            }
           />
 
           <div className="input-actions">
+
             <button
               className="icon-btn"
-              title={tx(lang, "voice")}
+              title={tx(
+                lang,
+                "voice"
+              )}
               onClick={() =>
-                startVoice(setText, lang, (m) => setError(m))
+                startVoice(
+                  setText,
+                  lang
+                )
               }
             >
               <Mic size={20} />
             </button>
 
-            <Link className="secondary-btn" to="/tender">
+            <Link
+              className="secondary-btn"
+              to="/tender"
+            >
               <Upload size={18} />
-              {tx(lang, "upload")}
+
+              {tx(
+                lang,
+                "upload"
+              )}
             </Link>
 
             <button
               className="primary-btn"
               disabled={loading}
-              onClick={run}
+              onClick={runAnalysis}
             >
-              {loading ? "Analyzing…" : tx(lang, "analyze")}
-              <ArrowRight size={18} />
+              {loading
+                ? "Analyzing..."
+                : tx(
+                    lang,
+                    "analyze"
+                  )}
+
+              <ArrowRight
+                size={18}
+              />
             </button>
+
           </div>
+
         </div>
 
         <div className="demo-row">
+
           <button
             className="text-btn"
-            onClick={() => setText(examplePrompt)}
+            onClick={() =>
+              setText(
+                examplePrompt
+              )
+            }
           >
-            Try an example: “{examplePrompt}”
+            Try an example:
+            "{examplePrompt}"
           </button>
+
         </div>
+
       </section>
 
+
       <section className="trust-strip">
+
         <div>
           <ShieldCheck />
-          <b>Evidence-first</b>
-          <span>Every major result has a source status.</span>
+
+          <b>
+            Evidence-first
+          </b>
+
+          <span>
+            Every major result
+            has a source status.
+          </span>
         </div>
 
         <div>
           <Database />
-          <b>Standards graph</b>
-          <span>Primary → related → test → safety.</span>
+
+          <b>
+            Standards graph
+          </b>
+
+          <span>
+            Primary → related →
+            test → safety.
+          </span>
         </div>
 
         <div>
           <GitCompare />
-          <b>Decision support</b>
-          <span>Compare standards against requirements.</span>
+
+          <b>
+            Decision support
+          </b>
+
+          <span>
+            Compare standards
+            against requirements.
+          </span>
         </div>
+
       </section>
 
-      {error && <div className="alert danger">{error}</div>}
+
+      {error && (
+        <div className="alert danger">
+          {error}
+        </div>
+      )}
+
 
       {result ? (
-        <AnalysisResult lang={lang} result={result} />
+        <AnalysisResult
+          lang={lang}
+          result={result}
+        />
       ) : (
         <section className="feature-grid">
+
           {[
             [
               "Natural-language standards search",
@@ -340,42 +454,53 @@ function Home({ lang }: { lang: Lang }) {
             ],
             [
               "Incomplete-input guidance",
-              "Identify important missing procurement information.",
+              "Identify missing requirements before procurement.",
               SlidersHorizontal,
             ],
             [
               "Simple explanations",
-              "Understand technical requirements in plain language.",
+              "Understand technical standards in plain language.",
               Lightbulb,
             ],
             [
               "Evidence separation",
-              "Official and interpreted information are clearly separated.",
+              "Official, verified and AI-derived information remain distinct.",
               ShieldCheck,
             ],
-          ].map(([title, desc, Icon]) => {
-            const IconComponent = Icon as any;
-
-            return (
+          ].map(
+            ([
+              title,
+              description,
+              Icon,
+            ]) => (
               <div
                 className="card feature"
-                key={title as string}
+                key={title}
               >
-                <IconComponent />
-                <h3>{title as string}</h3>
-                <p>{desc as string}</p>
+                <Icon />
+
+                <h3>
+                  {title}
+                </h3>
+
+                <p>
+                  {description}
+                </p>
               </div>
-            );
-          })}
+            )
+          )}
+
         </section>
       )}
+
     </div>
   );
 }
 
-/* =========================================================
-   ANALYSIS RESULT
-========================================================= */
+
+// ======================================================
+// ANALYSIS RESULT
+// ======================================================
 
 function AnalysisResult({
   lang,
@@ -384,84 +509,166 @@ function AnalysisResult({
   lang: Lang;
   result: any;
 }) {
-  const nav = useNavigate();
 
-  const analysis = result?.analysis || {
-    product: "Requirement",
-    requirements: [],
-    missing: [],
-  };
+  const navigate =
+    useNavigate();
 
-  const recommendations = result?.recommendations || [];
+  const analysis =
+    result?.analysis || {};
+
+  const recommendations =
+    Array.isArray(
+      result?.recommendations
+    )
+      ? result.recommendations
+      : [];
+
+  const requirements =
+    Array.isArray(
+      analysis?.requirements
+    )
+      ? analysis.requirements
+      : [];
+
+  const missing =
+    Array.isArray(
+      analysis?.missing
+    )
+      ? analysis.missing
+      : [];
+
 
   return (
     <section className="results">
+
       <div className="section-head">
+
         <div>
-          <span className="eyebrow">ANALYSIS</span>
-          <h2>{analysis.product || "Procurement Requirement"}</h2>
+
+          <span className="eyebrow">
+            ANALYSIS
+          </span>
+
+          <h2>
+            {analysis.product ||
+              "Specification Analysis"}
+          </h2>
+
         </div>
 
-        <span className="badge verified">STANDARDS ANALYSIS</span>
+        <span className="badge verified">
+          VERIFIED SOURCES
+        </span>
+
       </div>
 
-      {analysis.requirements?.length > 0 && (
-        <div className="requirement-grid">
-          {analysis.requirements.map((r: any, index: number) => (
-            <div
-              className="req"
-              key={`${r.name || "requirement"}-${index}`}
-            >
-              <CheckCircle2 />
 
-              <span>
-                <small>{r.name}</small>
-                <b>{r.value}</b>
-              </span>
-            </div>
-          ))}
+      {requirements.length >
+        0 && (
+        <div className="requirement-grid">
+
+          {requirements.map(
+            (requirement: any) => (
+              <div
+                className="req"
+                key={
+                  requirement.name
+                }
+              >
+
+                <CheckCircle2 />
+
+                <span>
+
+                  <small>
+                    {
+                      requirement.name
+                    }
+                  </small>
+
+                  <b>
+                    {
+                      requirement.value
+                    }
+                  </b>
+
+                </span>
+
+              </div>
+            )
+          )}
+
         </div>
       )}
 
-      {analysis.missing?.length > 0 && (
+
+      {missing.length >
+        0 && (
         <MissingQuestions
           lang={lang}
-          missing={analysis.missing}
+          missing={missing}
         />
       )}
 
-      <h3>{tx(lang, "applicable")}</h3>
 
-      {recommendations.length > 0 ? (
+      <h3>
+        {tx(
+          lang,
+          "applicable"
+        )}
+      </h3>
+
+
+      {recommendations.length >
+      0 ? (
         <div className="standard-cards">
-          {recommendations.map((r: any, index: number) => (
-            <StandardCard
-              key={getStandardId(r) || index}
-              lang={lang}
-              item={r}
-              onClick={() =>
-                nav(`/standards/${getStandardId(r)}`)
-              }
-            />
-          ))}
+
+          {recommendations.map(
+            (recommendation: any) => (
+              <StandardCard
+                key={
+                  recommendation
+                    ?.standard?.id
+                }
+                lang={lang}
+                item={
+                  recommendation
+                }
+                onClick={() =>
+                  navigate(
+                    `/standards/${
+                      recommendation
+                        ?.standard
+                        ?.id
+                    }`
+                  )
+                }
+              />
+            )
+          )}
+
         </div>
       ) : (
         <div className="empty card">
+
           <Info />
+
           <p>
-            No applicable standards were returned. Try adding
-            the product type, application, material, or technical
-            requirement.
+            No verified applicable
+            standard found.
           </p>
+
         </div>
       )}
+
     </section>
   );
 }
 
-/* =========================================================
-   MISSING QUESTIONS
-========================================================= */
+
+// ======================================================
+// MISSING QUESTIONS
+// ======================================================
 
 function MissingQuestions({
   lang,
@@ -470,49 +677,104 @@ function MissingQuestions({
   lang: Lang;
   missing: any[];
 }) {
-  const [values, setValues] = useState<Record<string, string>>({});
+
+  const [
+    values,
+    setValues,
+  ] = useState<
+    Record<string, string>
+  >({});
+
 
   return (
     <div className="card missing-box">
+
       <div className="missing-title">
+
         <AlertTriangle />
 
         <div>
-          <b>{tx(lang, "missing")}</b>
-          <p>{tx(lang, "selectRequired")}</p>
+
+          <b>
+            {tx(
+              lang,
+              "missing"
+            )}
+          </b>
+
+          <p>
+            {tx(
+              lang,
+              "selectRequired"
+            )}
+          </p>
+
         </div>
+
       </div>
+
 
       <div className="question-grid">
-        {missing.map((q) => (
-          <label key={q.key}>
-            <span>{q.label}</span>
 
-            <select
-              value={values[q.key] || ""}
-              onChange={(e) =>
-                setValues({
-                  ...values,
-                  [q.key]: e.target.value,
-                })
-              }
+        {missing.map(
+          (question: any) => (
+            <label
+              key={question.key}
             >
-              <option value="">Select…</option>
 
-              {(q.options || []).map((o: string) => (
-                <option key={o}>{o}</option>
-              ))}
-            </select>
-          </label>
-        ))}
+              <span>
+                {question.label}
+              </span>
+
+              <select
+                value={
+                  values[
+                    question.key
+                  ] || ""
+                }
+                onChange={(e) =>
+                  setValues({
+                    ...values,
+                    [question.key]:
+                      e.target.value,
+                  })
+                }
+              >
+
+                <option value="">
+                  Select...
+                </option>
+
+                {Array.isArray(
+                  question.options
+                ) &&
+                  question.options.map(
+                    (option: string) => (
+                      <option
+                        key={option}
+                        value={option}
+                      >
+                        {option}
+                      </option>
+                    )
+                  )}
+
+              </select>
+
+            </label>
+          )
+        )}
+
       </div>
+
     </div>
   );
 }
 
-/* =========================================================
-   STANDARD CARD
-========================================================= */
+
+// ======================================================
+// STANDARD CARD
+// ======================================================
 
 function StandardCard({
   lang,
@@ -523,115 +785,220 @@ function StandardCard({
   item: any;
   onClick: () => void;
 }) {
-  const s = localizedStandard(item?.standard || item, lang);
 
-  const confidence = getConfidence(item);
+  const standard =
+    localizedStandard(
+      item?.standard || {},
+      lang
+    );
+
 
   return (
     <div className="card standard-card">
+
       <div className="standard-top">
+
         <div>
+
           <span className="is-number">
-            {s?.is_number || "IS Standard"}
+            {standard.is_number}
           </span>
 
-          <h3>{s?.title || "Indian Standard"}</h3>
+          <h3>
+            {standard.title}
+          </h3>
+
         </div>
 
         <span className="badge verified">
-          {s?.verification_status || tx(lang, "official")}
+          {
+            standard.verification_status ||
+            tx(
+              lang,
+              "official"
+            )
+          }
         </span>
+
       </div>
+
 
       <p>
-        {item?.why_it_matches ||
+        {
+          item?.why_it_matches ||
           item?.applicability ||
-          s?.scope ||
-          "Potentially relevant standard based on the supplied requirement."}
+          "Applicable based on the submitted requirements."
+        }
       </p>
 
+
       <div className="standard-meta">
+
         <span>
-          Edition / Year <b>{s?.edition || "—"}</b>
+          Edition / Year{" "}
+          <b>
+            {standard.edition ||
+              "Not specified"}
+          </b>
         </span>
 
         <span>
-          Confidence <b>{confidence}%</b>
+          Confidence{" "}
+          <b>
+            {item?.confidence ??
+              "—"}
+            {item?.confidence != null
+              ? "%"
+              : ""}
+          </b>
         </span>
+
       </div>
 
+
       <div className="standard-actions">
-        <button className="link-btn" onClick={onClick}>
-          {tx(lang, "details")}
-          <ChevronRight size={16} />
+
+        <button
+          className="link-btn"
+          onClick={onClick}
+        >
+          {tx(
+            lang,
+            "details"
+          )}
+
+          <ChevronRight
+            size={16}
+          />
         </button>
 
-        {s?.source_url && (
+
+        {standard.source_url && (
           <a
             className="link-btn"
-            href={s.source_url}
+            href={
+              standard.source_url
+            }
             target="_blank"
             rel="noreferrer"
           >
             Official BIS evidence
-            <ExternalLink size={15} />
+
+            <ExternalLink
+              size={15}
+            />
           </a>
         )}
+
       </div>
+
     </div>
   );
 }
 
-/* =========================================================
-   SEARCH
-========================================================= */
 
-function SearchPage({ lang }: { lang: Lang }) {
-  const [q, setQ] = useState("");
-  const [domain, setDomain] = useState("");
-  const [results, setResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+// ======================================================
+// SEARCH
+// ======================================================
 
-  const doSearch = async () => {
-    if (!q.trim()) {
-      setError("Enter a product, material, requirement or IS number.");
-      return;
-    }
+function SearchPage({
+  lang,
+}: {
+  lang: Lang;
+}) {
 
-    setError("");
-    setLoading(true);
+  const [
+    query,
+    setQuery,
+  ] = useState("");
 
-    try {
-      const r = await api.search(
-        q.trim(),
-        domain || undefined
-      );
+  const [
+    domain,
+    setDomain,
+  ] = useState("");
 
-      setResults(r?.results || []);
-    } catch (e: any) {
-      setError(e?.message || "Search failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [
+    results,
+    setResults,
+  ] = useState<any[]>([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+
+  const doSearch =
+    async () => {
+
+      setError("");
+      setLoading(true);
+
+      try {
+
+        const response =
+          await api.search(
+            query,
+            domain || undefined
+          );
+
+        setResults(
+          Array.isArray(
+            response?.results
+          )
+            ? response.results
+            : []
+        );
+
+      } catch (error: any) {
+
+        setError(
+          error?.message ||
+            "Search failed."
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
 
   return (
     <Page
-      title={tx(lang, "search")}
-      intro="Search by product, requirement, domain or an IS identifier."
+      title={tx(
+        lang,
+        "search"
+      )}
+      intro="Search by product, requirement, domain or IS identifier."
     >
+
       <div className="search-panel card">
+
         <div className="search-row">
+
           <Search />
 
           <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) =>
-              e.key === "Enter" && doSearch()
+            value={query}
+            onChange={(e) =>
+              setQuery(
+                e.target.value
+              )
             }
-            placeholder="e.g. cement, water pump, electrical cable, EV charger…"
+            onKeyDown={(e) => {
+              if (
+                e.key === "Enter"
+              ) {
+                doSearch();
+              }
+            }}
+            placeholder="e.g. cement, water pump, electrical cable, street light..."
           />
 
           <button
@@ -639,16 +1006,31 @@ function SearchPage({ lang }: { lang: Lang }) {
             onClick={doSearch}
             disabled={loading}
           >
-            {loading ? "Searching…" : tx(lang, "search")}
+            {loading
+              ? "Searching..."
+              : tx(
+                  lang,
+                  "search"
+                )}
           </button>
+
         </div>
 
+
         <div className="filter-row">
+
           <select
             value={domain}
-            onChange={(e) => setDomain(e.target.value)}
+            onChange={(e) =>
+              setDomain(
+                e.target.value
+              )
+            }
           >
-            <option value="">All domains</option>
+
+            <option value="">
+              All domains
+            </option>
 
             {[
               "Lighting & Electrical",
@@ -666,948 +1048,1253 @@ function SearchPage({ lang }: { lang: Lang }) {
               "Fire & Safety",
               "Automotive",
               "Environment & Energy",
-            ].map((d) => (
-              <option key={d}>{d}</option>
-            ))}
+            ].map(
+              (domainName) => (
+                <option
+                  key={domainName}
+                  value={domainName}
+                >
+                  {domainName}
+                </option>
+              )
+            )}
+
           </select>
+
         </div>
+
       </div>
 
-      {error && <div className="alert danger">{error}</div>}
 
-      <div className="search-results">
-        {results.map((s) => {
-          const ls = localizedStandard(s, lang);
-
-          return (
-            <Link
-              className="search-result card"
-              to={`/standards/${s.id}`}
-              key={s.id}
-            >
-              <div>
-                <span className="is-number">
-                  {ls.is_number}
-                </span>
-
-                <h3>{ls.title}</h3>
-
-                <p>
-                  {s.domain} · {s.product_category}
-                </p>
-              </div>
-
-              <ChevronRight />
-            </Link>
-          );
-        })}
-      </div>
-
-      {results.length === 0 && !loading && (
-        <div className="empty card">
-          <Info />
-
-          <p>
-            Search results will appear here. Try
-            <b> cement for building construction</b>.
-          </p>
+      {error && (
+        <div className="alert danger">
+          {error}
         </div>
       )}
+
+
+      <div className="search-results">
+
+        {results.map(
+          (standard) => {
+
+            const localized =
+              localizedStandard(
+                standard,
+                lang
+              );
+
+            return (
+              <Link
+                className="search-result card"
+                to={`/standards/${standard.id}`}
+                key={standard.id}
+              >
+
+                <div>
+
+                  <span className="is-number">
+                    {
+                      localized.is_number
+                    }
+                  </span>
+
+                  <h3>
+                    {
+                      localized.title
+                    }
+                  </h3>
+
+                  <p>
+                    {
+                      standard.domain
+                    }{" "}
+                    ·{" "}
+                    {
+                      standard.product_category
+                    }
+                  </p>
+
+                </div>
+
+                <ChevronRight />
+
+              </Link>
+            );
+          }
+        )}
+
+      </div>
+
+
+      {results.length ===
+        0 &&
+        !loading && (
+          <div className="empty card">
+
+            <Info />
+
+            <p>
+              Search for a product
+              or requirement to find
+              applicable Indian
+              Standards.
+            </p>
+
+          </div>
+        )}
+
     </Page>
   );
 }
 
-/* =========================================================
-   STANDARD DETAILS
-========================================================= */
 
-function StandardDetails({ lang }: { lang: Lang }) {
-  const id = useLocation().pathname.split("/").pop()!;
+// ======================================================
+// STANDARD DETAILS
+// ======================================================
 
-  const [data, setData] = useState<any>();
-  const [err, setErr] = useState("");
+function StandardDetails({
+  lang,
+}: {
+  lang: Lang;
+}) {
+
+  const id =
+    useLocation()
+      .pathname
+      .split("/")
+      .pop() || "";
+
+
+  const [
+    data,
+    setData,
+  ] = useState<any>();
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
 
   useEffect(() => {
-    setData(undefined);
-    setErr("");
 
-    api
-      .standard(id)
+    setError("");
+
+    api.standard(id)
       .then(setData)
-      .catch((e) => setErr(e?.message || "Unable to load standard."));
+      .catch(
+        (error: any) =>
+          setError(
+            error?.message ||
+              "Unable to load standard."
+          )
+      );
+
   }, [id]);
 
-  if (err) {
+
+  if (error) {
+
     return (
       <Page title="Standard details">
-        <div className="alert danger">{err}</div>
+
+        <div className="alert danger">
+          {error}
+        </div>
+
       </Page>
     );
   }
+
 
   if (!data) {
+
     return (
       <Page title="Standard details">
-        <div className="loading">Loading…</div>
+
+        <div className="loading">
+          Loading...
+        </div>
+
       </Page>
     );
   }
 
-  const s = localizedStandard(data.standard, lang);
+
+  const standard =
+    localizedStandard(
+      data.standard,
+      lang
+    );
+
+
+  const relationships =
+    Array.isArray(
+      data.relationships
+    )
+      ? data.relationships
+      : [];
+
 
   return (
     <Page
-      title={s.is_number}
-      intro="Complete standard record, scope, relationships and evidence."
+      title={
+        standard.is_number
+      }
+      intro="Standard metadata, relationships and evidence."
     >
-      <div className="detail-grid">
-        <div className="card detail-main">
-          <span className="is-number">{s.is_number}</span>
 
-          <h2>{s.title}</h2>
+      <div className="detail-grid">
+
+        <div className="card detail-main">
+
+          <span className="is-number">
+            {standard.is_number}
+          </span>
+
+          <h2>
+            {standard.title}
+          </h2>
 
           <div className="badge verified">
-            {s.verification_status}
+            {
+              standard.verification_status
+            }
           </div>
 
           <dl>
-            <dt>Edition / Year</dt>
-            <dd>{s.edition || "—"}</dd>
 
-            <dt>Status</dt>
-            <dd>{s.status || "—"}</dd>
+            <dt>
+              Edition / Year
+            </dt>
 
-            <dt>Scope</dt>
-            <dd>{s.scope || "—"}</dd>
+            <dd>
+              {standard.edition}
+            </dd>
 
-            <dt>Domain</dt>
-            <dd>{s.domain || "—"}</dd>
+            <dt>
+              Status
+            </dt>
 
-            <dt>Product category</dt>
-            <dd>{s.product_category || "—"}</dd>
+            <dd>
+              {standard.status}
+            </dd>
+
+            <dt>
+              Scope
+            </dt>
+
+            <dd>
+              {standard.scope}
+            </dd>
+
+            <dt>
+              Domain
+            </dt>
+
+            <dd>
+              {standard.domain}
+            </dd>
+
+            <dt>
+              Product category
+            </dt>
+
+            <dd>
+              {
+                standard.product_category
+              }
+            </dd>
+
           </dl>
+
         </div>
 
-        <aside className="card evidence-card">
-          <h3>{tx(lang, "source")}</h3>
 
-          <div className="evidence-badge">BIS</div>
+        <aside className="card evidence-card">
+
+          <h3>
+            {tx(
+              lang,
+              "source"
+            )}
+          </h3>
+
+          <div className="evidence-badge">
+            BIS
+          </div>
 
           <p>
-            {s.source_name || "Bureau of Indian Standards"}
+            {
+              standard.source_name ||
+              "Bureau of Indian Standards"
+            }
           </p>
 
-          {s.source_url && (
+          {standard.source_url && (
             <a
               className="primary-btn"
-              href={s.source_url}
+              href={
+                standard.source_url
+              }
               target="_blank"
               rel="noreferrer"
             >
               Official BIS evidence
-              <ExternalLink size={15} />
+
+              <ExternalLink
+                size={15}
+              />
             </a>
           )}
+
         </aside>
+
       </div>
 
-      <h3>{tx(lang, "related")}</h3>
+
+      <h3>
+        {tx(
+          lang,
+          "related"
+        )}
+      </h3>
+
 
       <div className="relationship-list">
-        {(data.relationships || []).map((r: any) => {
-          const rs = localizedStandard(r.standard, lang);
 
-          return (
-            <div
-              className="card relation"
-              key={r.standard.id}
-            >
-              <span className="relation-type">
-                {r.relationship}
-              </span>
+        {relationships.map(
+          (relationship: any) => {
 
-              <span className="is-number">
-                {rs.is_number}
-              </span>
+            const related =
+              localizedStandard(
+                relationship.standard,
+                lang
+              );
 
-              <b>{rs.title}</b>
-            </div>
-          );
-        })}
+            return (
+              <div
+                className="card relation"
+                key={
+                  relationship
+                    .standard.id
+                }
+              >
+
+                <span className="relation-type">
+                  {
+                    relationship.relationship
+                  }
+                </span>
+
+                <span className="is-number">
+                  {
+                    related.is_number
+                  }
+                </span>
+
+                <b>
+                  {related.title}
+                </b>
+
+              </div>
+            );
+          }
+        )}
+
       </div>
+
     </Page>
   );
 }
 
-/* =========================================================
-   COMPARE STANDARDS PAGE
-========================================================= */
 
-function ComparePage({ lang }: { lang: Lang }) {
-  const [query, setQuery] = useState("cement for building construction");
-  const [standards, setStandards] = useState<any[]>([]);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [rows, setRows] = useState<any[]>([]);
-  const [loadingSearch, setLoadingSearch] = useState(false);
-  const [loadingCompare, setLoadingCompare] = useState(false);
-  const [error, setError] = useState("");
+// ======================================================
+// STANDARD COMPARISON
+// ======================================================
 
-  const findStandards = async () => {
-    if (!query.trim()) return;
+function ComparePage({
+  lang,
+}: {
+  lang: Lang;
+}) {
 
-    setError("");
-    setLoadingSearch(true);
+  const [
+    selected,
+    setSelected,
+  ] = useState<string[]>([]);
 
-    try {
-      const r = await api.search(query.trim());
+  const [
+    standards,
+    setStandards,
+  ] = useState<any[]>([]);
 
-      const found = r?.results || [];
+  const [
+    searchText,
+    setSearchText,
+  ] = useState("");
 
-      setStandards(found);
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+
+  const search =
+    async () => {
+
+      if (!searchText.trim()) {
+        return;
+      }
+
+      try {
+
+        const response =
+          await api.search(
+            searchText
+          );
+
+        setStandards(
+          Array.isArray(
+            response?.results
+          )
+            ? response.results
+            : []
+        );
+
+      } catch (error: any) {
+
+        setError(
+          error?.message ||
+            "Unable to search standards."
+        );
+      }
+    };
+
+
+  const toggle =
+    (id: string) => {
 
       setSelected(
-        found
-          .slice(0, 3)
-          .map((s: any) => s.id)
-          .filter(Boolean)
+        (current) =>
+          current.includes(id)
+            ? current.filter(
+                (item) =>
+                  item !== id
+              )
+            : [
+                ...current,
+                id,
+              ]
       );
+    };
 
-      setRows([]);
-    } catch (e: any) {
-      setError(e?.message || "Unable to find standards.");
-    } finally {
-      setLoadingSearch(false);
-    }
-  };
 
-  const toggleStandard = (id: string) => {
-    setSelected((current) =>
-      current.includes(id)
-        ? current.filter((x) => x !== id)
-        : current.length < 4
-        ? [...current, id]
-        : current
-    );
-  };
+  const [
+    comparison,
+    setComparison,
+  ] = useState<any>(null);
 
-  const compare = async () => {
-    if (selected.length < 2) {
-      setError("Select at least 2 standards to compare.");
-      return;
-    }
 
-    setError("");
-    setLoadingCompare(true);
+  const compare =
+    async () => {
 
-    try {
-      const result = await api.compareStandards(selected);
+      if (
+        selected.length <
+        2
+      ) {
 
-      setRows(
-        result?.standards ||
-          result?.results ||
-          result?.comparisons ||
-          []
-      );
-    } catch (e: any) {
-      setError(e?.message || "Comparison failed.");
-    } finally {
-      setLoadingCompare(false);
-    }
-  };
+        setError(
+          "Select at least two standards to compare."
+        );
+
+        return;
+      }
+
+      setError("");
+      setLoading(true);
+
+      try {
+
+        const response =
+          await api.compareStandards(
+            selected
+          );
+
+        setComparison(
+          response
+        );
+
+      } catch (error: any) {
+
+        setError(
+          error?.message ||
+            "Standard comparison failed."
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
 
   return (
     <Page
-      title={tx(lang, "compare")}
-      intro="Find relevant Indian Standards and compare their scope, edition, domain and applicability."
+      title={tx(
+        lang,
+        "compare"
+      )}
+      intro="Compare applicable Indian Standards side-by-side."
     >
-      <div className="card search-panel">
+
+      <div className="card">
+
         <div className="search-row">
+
           <Search />
 
           <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) =>
-              e.key === "Enter" && findStandards()
+            value={searchText}
+            onChange={(e) =>
+              setSearchText(
+                e.target.value
+              )
             }
-            placeholder="Search standards to compare…"
+            placeholder="Search standards to compare..."
           />
 
           <button
             className="primary-btn"
-            onClick={findStandards}
-            disabled={loadingSearch}
+            onClick={search}
           >
-            {loadingSearch ? "Finding…" : "Find Standards"}
+            Search
           </button>
+
         </div>
+
+
+        <div className="standard-list">
+
+          {standards.map(
+            (standard) => (
+              <label
+                className="card standard-line"
+                key={standard.id}
+              >
+
+                <input
+                  type="checkbox"
+                  checked={selected.includes(
+                    standard.id
+                  )}
+                  onChange={() =>
+                    toggle(
+                      standard.id
+                    )
+                  }
+                />
+
+                <span className="is-number">
+                  {
+                    standard.is_number
+                  }
+                </span>
+
+                <span>
+                  {localizedStandard(
+                    standard,
+                    lang
+                  ).title}
+                </span>
+
+              </label>
+            )
+          )}
+
+        </div>
+
+
+        <button
+          className="primary-btn"
+          onClick={compare}
+          disabled={
+            loading ||
+            selected.length < 2
+          }
+        >
+          {loading
+            ? "Comparing..."
+            : "Compare Selected Standards"}
+        </button>
+
       </div>
 
-      {error && <div className="alert danger">{error}</div>}
 
-      {standards.length > 0 && (
-        <div className="card compare-selector">
-          <div className="section-head">
-            <div>
-              <span className="eyebrow">SELECT</span>
-              <h2>Standards to compare</h2>
-            </div>
+      {error && (
+        <div className="alert danger">
+          {error}
+        </div>
+      )}
 
-            <span>
-              {selected.length}/4 selected
-            </span>
-          </div>
 
-          <div className="standard-select-grid">
-            {standards.map((s) => {
-              const active = selected.includes(s.id);
-              const ls = localizedStandard(s, lang);
+      {comparison && (
+        <div className="card table-wrap">
 
-              return (
-                <button
-                  type="button"
-                  className={`standard-select-card ${
-                    active ? "selected" : ""
-                  }`}
-                  key={s.id}
-                  onClick={() => toggleStandard(s.id)}
-                >
-                  <span className="is-number">
-                    {ls.is_number}
-                  </span>
+          <h3>
+            Standards Comparison
+          </h3>
 
-                  <strong>{ls.title}</strong>
-
-                  <small>
-                    {s.domain} · {s.product_category}
-                  </small>
-
-                  {active && (
-                    <span className="selected-check">
-                      <Check size={16} />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            className="primary-btn"
-            onClick={compare}
-            disabled={
-              loadingCompare || selected.length < 2
-            }
+          <pre
+            style={{
+              whiteSpace:
+                "pre-wrap",
+              overflowX:
+                "auto",
+            }}
           >
-            <GitCompare size={18} />
+            {JSON.stringify(
+              comparison,
+              null,
+              2
+            )}
+          </pre>
 
-            {loadingCompare
-              ? "Comparing…"
-              : "Compare Selected Standards"}
-          </button>
         </div>
       )}
 
-      {rows.length > 0 && (
-        <StandardComparisonTable
-          lang={lang}
-          rows={rows}
-        />
-      )}
-
-      {standards.length === 0 && !loadingSearch && (
-        <div className="empty card">
-          <GitCompare />
-
-          <p>
-            Search for a product or requirement first.
-            Example: <b>cement for building construction</b>.
-          </p>
-        </div>
-      )}
     </Page>
   );
 }
 
-/* =========================================================
-   COMPARISON TABLE
-========================================================= */
 
-function StandardComparisonTable({
+// ======================================================
+// AI RECOMMENDATION
+// ======================================================
+
+function RecommendationPage({
   lang,
-  rows,
 }: {
   lang: Lang;
-  rows: any[];
 }) {
-  const normalized = rows.map((item) =>
-    item?.standard ? item.standard : item
+
+  const [
+    text,
+    setText,
+  ] = useState(
+    examplePrompt
   );
 
-  const attributes = [
-    {
-      label: "IS Number",
-      get: (s: any) => s?.is_number || "—",
-    },
-    {
-      label: "Title",
-      get: (s: any) =>
-        localizedStandard(s, lang)?.title || "—",
-    },
-    {
-      label: "Edition / Year",
-      get: (s: any) => s?.edition || "—",
-    },
-    {
-      label: "Status",
-      get: (s: any) => s?.status || "—",
-    },
-    {
-      label: "Domain",
-      get: (s: any) => s?.domain || "—",
-    },
-    {
-      label: "Product Category",
-      get: (s: any) =>
-        s?.product_category || "—",
-    },
-    {
-      label: "Scope",
-      get: (s: any) =>
-        localizedStandard(s, lang)?.scope || "—",
-    },
-  ];
+  const [
+    recommendations,
+    setRecommendations,
+  ] = useState<any[]>([]);
 
-  return (
-    <div className="card table-wrap">
-      <div className="section-head">
-        <div>
-          <span className="eyebrow">COMPARISON</span>
-          <h2>Standards side by side</h2>
-        </div>
-      </div>
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-      <table>
-        <thead>
-          <tr>
-            <th>Feature</th>
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-            {normalized.map((s: any, index: number) => (
-              <th key={s?.id || index}>
-                {s?.is_number || "Standard"}
-              </th>
-            ))}
-          </tr>
-        </thead>
 
-        <tbody>
-          {attributes.map((attribute) => (
-            <tr key={attribute.label}>
-              <td>
-                <b>{attribute.label}</b>
-              </td>
+  const submit =
+    async () => {
 
-              {normalized.map((s: any, index: number) => (
-                <td key={`${attribute.label}-${index}`}>
-                  {attribute.get(s)}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+      if (!text.trim()) {
 
-/* =========================================================
-   RECOMMENDATION PAGE
-========================================================= */
+        setError(
+          "Please enter a product specification or procurement requirement."
+        );
 
-function RecommendationPage({ lang }: { lang: Lang }) {
-  const [text, setText] = useState(
-    "cement for building construction"
-  );
-
-  const [domain, setDomain] = useState("");
-  const [results, setResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const submit = async () => {
-    if (!text.trim()) {
-      setError(
-        "Enter a product or procurement specification."
-      );
-      return;
-    }
-
-    setError("");
-    setLoading(true);
-
-    try {
-      const result = await api.recommend(
-        text.trim(),
-        lang
-      );
-
-      let recommendations =
-        result?.recommendations ||
-        result?.results ||
-        [];
-
-      if (
-        recommendations.length === 0 &&
-        result?.analysis
-      ) {
-        recommendations =
-          result?.recommendations || [];
+        return;
       }
 
-      setResults(recommendations);
-    } catch (e: any) {
-      setError(
-        e?.message || "Standards recommendation failed."
-      );
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setError("");
+      setLoading(true);
 
-  const quickExamples = useMemo(
-    () => [
-      "cement for building construction",
-      "PVC electrical cable for residential wiring",
-      "EV charging equipment",
-      "drinking water supply",
-      "concrete for structural construction",
-      "industrial safety equipment",
-    ],
-    []
-  );
+      try {
+
+        const response =
+          await api.recommend(
+            text,
+            lang
+          );
+
+        setRecommendations(
+          Array.isArray(
+            response?.recommendations
+          )
+            ? response.recommendations
+            : []
+        );
+
+      } catch (error: any) {
+
+        console.error(error);
+
+        setError(
+          error?.message ||
+            "Recommendation failed."
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
 
   return (
     <Page
-      title={tx(lang, "recommend")}
-      intro="Enter a procurement requirement and BIS SENSOR recommends potentially applicable Indian Standards."
+      title={tx(
+        lang,
+        "recommend"
+      )}
+      intro="Describe your procurement requirement and BIS SENSOR will rank applicable standards."
     >
-      <div className="card recommendation-input">
-        <div className="section-head">
-          <div>
-            <span className="eyebrow">
-              STANDARDS RECOMMENDATION
-            </span>
 
-            <h2>What are you procuring?</h2>
-          </div>
+      <div className="card">
 
-          <ShieldCheck />
-        </div>
+        <label>
 
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Describe the product, material or procurement requirement…"
-          rows={5}
-        />
+          <span>
+            Product / Procurement
+            Requirement
+          </span>
 
-        <div className="form-grid">
-          <label>
-            <span>Domain</span>
+          <textarea
+            value={text}
+            onChange={(e) =>
+              setText(
+                e.target.value
+              )
+            }
+            placeholder="Example: Need standards for cement for building construction..."
+            style={{
+              width: "100%",
+              minHeight: "150px",
+            }}
+          />
 
-            <select
-              value={domain}
-              onChange={(e) =>
-                setDomain(e.target.value)
-              }
-            >
-              <option value="">Auto detect</option>
-              <option>Construction</option>
-              <option>Cables & Wires</option>
-              <option>Water & Pumps</option>
-              <option>Electrical Safety</option>
-              <option>EV</option>
-              <option>Food & Agriculture</option>
-              <option>Fire & Safety</option>
-              <option>Mechanical</option>
-              <option>Medical Devices</option>
-            </select>
-          </label>
-        </div>
+        </label>
+
 
         <button
           className="primary-btn"
           onClick={submit}
           disabled={loading}
         >
-          {loading ? (
-            <>
-              <RefreshCw size={18} />
-              Analyzing…
-            </>
-          ) : (
-            <>
-              <Star size={18} />
-              {tx(lang, "generate")}
-            </>
-          )}
+          {loading
+            ? "Generating..."
+            : tx(
+                lang,
+                "generate"
+              )}
         </button>
+
       </div>
 
-      <div className="quick-examples">
-        <span>Examples:</span>
 
-        {quickExamples.map((example) => (
-          <button
-            key={example}
-            onClick={() => setText(example)}
-          >
-            {example}
-          </button>
-        ))}
-      </div>
-
-      {error && <div className="alert danger">{error}</div>}
-
-      {results.length > 0 && (
-        <section className="recommend-section">
-          <div className="section-head">
-            <div>
-              <span className="eyebrow">
-                RECOMMENDED STANDARDS
-              </span>
-
-              <h2>
-                {results.length} potentially relevant
-                standard
-                {results.length === 1 ? "" : "s"}
-              </h2>
-            </div>
-          </div>
-
-          <div className="recommend-grid">
-            {results.map((item, index) => {
-              const standard =
-                item?.standard || item;
-
-              const confidence =
-                getConfidence(item);
-
-              return (
-                <RecommendationCard
-                  key={
-                    getStandardId(item) ||
-                    `recommendation-${index}`
-                  }
-                  lang={lang}
-                  item={item}
-                  rank={index + 1}
-                  standard={standard}
-                  confidence={confidence}
-                />
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {!loading && results.length === 0 && !error && (
-        <div className="empty card">
-          <Lightbulb />
-
-          <p>
-            Enter a requirement above to get applicable
-            Indian Standard recommendations.
-          </p>
+      {error && (
+        <div className="alert danger">
+          {error}
         </div>
       )}
+
+
+      {recommendations.length >
+      0 && (
+        <div className="recommend-grid">
+
+          {recommendations.map(
+            (
+              recommendation,
+              index
+            ) => {
+
+              const standard =
+                localizedStandard(
+                  recommendation
+                    ?.standard ||
+                    {},
+                  lang
+                );
+
+              return (
+                <div
+                  className="card recommend-card"
+                  key={
+                    standard.id ||
+                    index
+                  }
+                >
+
+                  <div className="rank">
+                    #{index + 1}
+                  </div>
+
+                  <span className="is-number">
+                    {
+                      standard.is_number
+                    }
+                  </span>
+
+                  <h3>
+                    {
+                      standard.title
+                    }
+                  </h3>
+
+                  <div className="score-ring">
+
+                    {
+                      recommendation
+                        ?.confidence ??
+                      "—"
+                    }
+
+                    <small>
+                      %
+                    </small>
+
+                  </div>
+
+                  <p>
+
+                    <strong>
+                      Why:
+                    </strong>{" "}
+
+                    {
+                      recommendation
+                        ?.why_it_matches ||
+                      recommendation
+                        ?.applicability ||
+                      "Matches the submitted procurement requirement."
+                    }
+
+                  </p>
+
+
+                  {standard.source_url && (
+                    <a
+                      className="link-btn"
+                      href={
+                        standard.source_url
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Official BIS evidence
+
+                      <ExternalLink
+                        size={15}
+                      />
+                    </a>
+                  )}
+
+                </div>
+              );
+            }
+          )}
+
+        </div>
+      )}
+
+
+      {!loading &&
+        recommendations.length ===
+          0 &&
+        !error && (
+          <div className="empty card">
+
+            <Info />
+
+            <p>
+              Enter a requirement
+              and click Generate
+              Recommendation.
+            </p>
+
+          </div>
+        )}
+
     </Page>
   );
 }
 
-/* =========================================================
-   RECOMMENDATION CARD
-========================================================= */
 
-function RecommendationCard({
+// ======================================================
+// SAFETY
+// ======================================================
+
+function SafetyPage({
   lang,
-  item,
-  rank,
-  standard,
-  confidence,
 }: {
   lang: Lang;
-  item: any;
-  rank: number;
-  standard: any;
-  confidence: number;
 }) {
-  const navigate = useNavigate();
 
-  const s = localizedStandard(standard, lang);
+  const [
+    items,
+    setItems,
+  ] = useState<any[]>([]);
 
-  return (
-    <div className="card recommend-card">
-      <div className="rank">#{rank}</div>
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-      <span className="is-number">
-        {s?.is_number || "IS Standard"}
-      </span>
-
-      <h3>{s?.title || "Indian Standard"}</h3>
-
-      <div className="score-ring">
-        {confidence}
-        <small>/100</small>
-      </div>
-
-      <div className="recommend-meta">
-        <span>
-          <b>Edition:</b> {s?.edition || "—"}
-        </span>
-
-        <span>
-          <b>Domain:</b> {s?.domain || "—"}
-        </span>
-      </div>
-
-      <p>
-        <strong>Why it matches:</strong>{" "}
-        {item?.why_it_matches ||
-          item?.applicability ||
-          "The standard appears relevant to the supplied requirement."}
-      </p>
-
-      {item?.why_matters && (
-        <p>
-          <strong>Why it matters:</strong>{" "}
-          {item.why_matters}
-        </p>
-      )}
-
-      <div className="standard-actions">
-        <button
-          className="link-btn"
-          onClick={() =>
-            navigate(`/standards/${s.id}`)
-          }
-        >
-          View standard
-          <ChevronRight size={16} />
-        </button>
-
-        {s?.source_url && (
-          <a
-            className="link-btn"
-            href={s.source_url}
-            target="_blank"
-            rel="noreferrer"
-          >
-            BIS Source
-            <ExternalLink size={15} />
-          </a>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
-   SAFETY
-========================================================= */
-
-function SafetyPage({ lang }: { lang: Lang }) {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .safety({
-        product: "Procurement item",
-        requirements: ["Government procurement"],
-        environment: "General",
-      })
-      .then((r) => setItems(r?.items || []))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
+
+    api.safety({
+      product:
+        "Outdoor LED Street Light",
+      requirements: [
+        "Outdoor",
+        "Government tender",
+      ],
+      environment:
+        "Outdoor",
+    })
+      .then(
+        (response) =>
+          setItems(
+            Array.isArray(
+              response?.items
+            )
+              ? response.items
+              : []
+          )
+      )
+      .catch(
+        (error: any) =>
+          setError(
+            error?.message ||
+              "Safety checklist unavailable."
+          )
+      );
+
   }, []);
+
 
   return (
     <Page
-      title={tx(lang, "safety")}
-      intro={
-        tx(lang, "safetyIntro") +
-        " " +
-        tx(lang, "buyingIntro")
-      }
+      title={tx(
+        lang,
+        "safety"
+      )}
+      intro={tx(
+        lang,
+        "safetyIntro"
+      )}
     >
+
+      {error && (
+        <div className="alert danger">
+          {error}
+        </div>
+      )}
+
+
       <div className="notice">
+
         <ShieldCheck />
 
         <div>
-          <b>Safety is a verification workflow</b>
+
+          <b>
+            Safety is a
+            verification workflow
+          </b>
 
           <p>
-            Use each item to check product documentation,
-            installation conditions and authoritative
-            requirements before procurement.
+            Verify product
+            documentation,
+            installation conditions
+            and authoritative
+            requirements before
+            procurement.
           </p>
+
         </div>
+
       </div>
 
-      {loading && (
-        <div className="loading">Loading safety checklist…</div>
-      )}
 
       <div className="checklist">
-        {items.map((x) => (
-          <div
-            className="card checklist-item"
-            key={x.title}
-          >
-            <CheckCircle2 />
 
-            <div>
-              <b>{x.title}</b>
-              <p>{x.description}</p>
+        {items.map(
+          (item) => (
+            <div
+              className="card checklist-item"
+              key={item.title}
+            >
+
+              <CheckCircle2 />
+
+              <div>
+
+                <b>
+                  {item.title}
+                </b>
+
+                <p>
+                  {item.description}
+                </p>
+
+              </div>
+
+              <span>
+                {item.type}
+              </span>
+
             </div>
+          )
+        )}
 
-            <span>{x.type}</span>
-          </div>
-        ))}
       </div>
 
-      {!loading && items.length === 0 && (
-        <div className="empty card">
-          <Info />
-          <p>No safety checklist items returned.</p>
-        </div>
-      )}
     </Page>
   );
 }
 
-/* =========================================================
-   TENDER
-========================================================= */
 
-function TenderPage({ lang }: { lang: Lang }) {
-  const [file, setFile] = useState<File>();
-  const [res, setRes] = useState<any>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+// ======================================================
+// TENDER
+// ======================================================
 
-  const submit = async () => {
-    if (!file) return;
+function TenderPage({
+  lang,
+}: {
+  lang: Lang;
+}) {
 
-    setLoading(true);
-    setError("");
+  const [
+    file,
+    setFile,
+  ] = useState<File>();
 
-    try {
-      setRes(await api.tender(file));
-    } catch (e: any) {
-      setError(
-        e?.message || "Tender analysis failed."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [
+    result,
+    setResult,
+  ] = useState<any>();
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+
+  const submit =
+    async () => {
+
+      if (!file) {
+        return;
+      }
+
+      setError("");
+      setLoading(true);
+
+      try {
+
+        const response =
+          await api.tender(
+            file
+          );
+
+        setResult(
+          response
+        );
+
+      } catch (error: any) {
+
+        setError(
+          error?.message ||
+            "Tender analysis failed."
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
 
   return (
     <Page
-      title={tx(lang, "tender")}
-      intro="Upload a PDF, DOCX or TXT tender. BIS SENSOR extracts requirements and identifies potentially applicable standards."
+      title={tx(
+        lang,
+        "tender"
+      )}
+      intro="Upload a PDF, DOCX or TXT tender document for standards analysis."
     >
+
       <div className="upload-card card">
+
         <FileText size={30} />
 
-        <h3>Upload tender document</h3>
+        <h3>
+          Upload tender
+          document
+        </h3>
 
         <p>
-          Supported: PDF, DOCX, TXT. Scanned PDFs may require
-          OCR.
+          Supported: PDF,
+          DOCX and TXT.
         </p>
 
         <input
           type="file"
           accept=".pdf,.docx,.txt"
           onChange={(e) =>
-            setFile(e.target.files?.[0])
+            setFile(
+              e.target.files?.[0]
+            )
           }
         />
 
-        {file && <b>{file.name}</b>}
+        {file && (
+          <b>
+            {file.name}
+          </b>
+        )}
 
         <button
           className="primary-btn"
-          disabled={!file || loading}
+          disabled={
+            !file || loading
+          }
           onClick={submit}
         >
           {loading
-            ? "Analyzing…"
+            ? "Analyzing..."
             : "Run Tender Standards Review"}
         </button>
+
       </div>
 
+
       {error && (
-        <div className="alert danger">{error}</div>
+        <div className="alert danger">
+          {error}
+        </div>
       )}
 
-      {res && (
+
+      {result && (
         <div className="card tender-result">
-          <h3>Extracted product</h3>
+
+          <h3>
+            Extracted Product
+          </h3>
 
           <p>
-            {res?.review?.analysis?.product ||
-              "Requirement extracted"}
+            {
+              result?.review
+                ?.analysis
+                ?.product ||
+              "Not identified"
+            }
           </p>
 
-          <h3>{tx(lang, "applicable")}</h3>
 
-          {(res?.review?.recommendations || []).map(
-            (r: any) => (
+          <h3>
+            {tx(
+              lang,
+              "applicable"
+            )}
+          </h3>
+
+
+          {(
+            result?.review
+              ?.recommendations ||
+            []
+          ).map(
+            (recommendation: any) => (
               <div
                 className="mini-standard"
-                key={r.standard.id}
+                key={
+                  recommendation
+                    ?.standard?.id
+                }
               >
+
                 <span className="is-number">
-                  {r.standard.is_number}
+                  {
+                    recommendation
+                      ?.standard
+                      ?.is_number
+                  }
                 </span>
 
                 <p>
-                  {r.applicability ||
-                    r.why_it_matches}
+                  {
+                    recommendation
+                      ?.applicability
+                  }
                 </p>
 
                 <span>
-                  {getConfidence(r)}%
+                  {
+                    recommendation
+                      ?.confidence
+                  }%
                 </span>
+
               </div>
             )
           )}
+
         </div>
       )}
+
     </Page>
   );
 }
 
-/* =========================================================
-   EVIDENCE
-========================================================= */
 
-function EvidencePage({ lang }: { lang: Lang }) {
+// ======================================================
+// EVIDENCE
+// ======================================================
+
+function EvidencePage({
+  lang,
+}: {
+  lang: Lang;
+}) {
+
   return (
     <Page
-      title={tx(lang, "evidence")}
-      intro="Evidence is deliberately separated from AI interpretation. A missing source is shown as missing, never invented."
+      title={tx(
+        lang,
+        "evidence"
+      )}
+      intro="Evidence is separated from AI interpretation."
     >
+
       <div className="evidence-grid">
+
         {[
           [
             "OFFICIAL",
-            "Authoritative publication or authority source.",
+            "Authoritative BIS or government source.",
           ],
           [
             "VERIFIED",
@@ -1615,7 +2302,7 @@ function EvidencePage({ lang }: { lang: Lang }) {
           ],
           [
             "THIRD-PARTY",
-            "Seller, marketplace or customer information requiring scrutiny.",
+            "Seller, marketplace or customer information.",
           ],
           [
             "AI-DERIVED",
@@ -1625,93 +2312,159 @@ function EvidencePage({ lang }: { lang: Lang }) {
             "UNVERIFIED",
             "Requires verification before procurement use.",
           ],
-        ].map(([a, b]) => (
-          <div className="card" key={a}>
-            <span
-              className={`badge ${a
-                .toLowerCase()
-                .replace("-", "")}`}
+        ].map(
+          ([name, description]) => (
+            <div
+              className="card"
+              key={name}
             >
-              {a}
-            </span>
 
-            <p>{b}</p>
-          </div>
-        ))}
+              <span
+                className={`badge ${name
+                  .toLowerCase()
+                  .replace(
+                    "-",
+                    ""
+                  )}`}
+              >
+                {name}
+              </span>
+
+              <p>
+                {description}
+              </p>
+
+            </div>
+          )
+        )}
+
       </div>
+
     </Page>
   );
 }
 
-/* =========================================================
-   DASHBOARD
-========================================================= */
 
-function Dashboard({ lang }: { lang: Lang }) {
+// ======================================================
+// DASHBOARD
+// ======================================================
+
+function Dashboard({
+  lang,
+}: {
+  lang: Lang;
+}) {
+
   return (
     <Page
-      title={tx(lang, "dashboard")}
-      intro="A unified view of requirements, standards, compliance signals, product evaluation and evidence."
+      title={tx(
+        lang,
+        "dashboard"
+      )}
+      intro="Unified view of standards intelligence and procurement decision support."
     >
+
       <div className="dashboard-grid">
+
         {[
           [
             "Requirement",
             "Natural-language input",
-            "Detected automatically",
+            "AI requirement extraction",
           ],
           [
             "Standards",
-            "Applicable IS standards",
+            "Indian Standards",
             "Relationship-aware",
           ],
           [
             "Compliance",
-            "Needs Verification",
-            "No certification claim",
-          ],
-          [
-            "Recommendations",
-            "Standards ranking",
-            "Explainable matching",
+            "Verification workflow",
+            "No automatic certification claim",
           ],
           [
             "Comparison",
-            "Side-by-side",
-            "Scope and edition comparison",
+            "Standards comparison",
+            "Side-by-side analysis",
+          ],
+          [
+            "Recommendation",
+            "AI-assisted",
+            "Explainable ranking",
           ],
           [
             "Evidence",
-            "Verification status",
+            "Source-aware",
             "Authoritative sources separated",
           ],
-        ].map((x) => (
-          <div className="card metric" key={x[0]}>
-            <small>{x[0]}</small>
-            <strong>{x[1]}</strong>
-            <span>{x[2]}</span>
-          </div>
-        ))}
+        ].map(
+          (item) => (
+            <div
+              className="card metric"
+              key={item[0]}
+            >
+
+              <small>
+                {item[0]}
+              </small>
+
+              <strong>
+                {item[1]}
+              </strong>
+
+              <span>
+                {item[2]}
+              </span>
+
+            </div>
+          )
+        )}
+
       </div>
+
     </Page>
   );
 }
 
-/* =========================================================
-   EXPLORER
-========================================================= */
 
-function Explorer({ lang }: { lang: Lang }) {
-  const [results, setResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+// ======================================================
+// EXPLORER
+// ======================================================
+
+function Explorer({
+  lang,
+}: {
+  lang: Lang;
+}) {
+
+  const [
+    results,
+    setResults,
+  ] = useState<any[]>([]);
+
 
   useEffect(() => {
-    api
-      .search("", undefined)
-      .then((r) => setResults(r?.results || []))
-      .catch(() => setResults([]))
-      .finally(() => setLoading(false));
+
+    api.search(
+      ""
+    )
+      .then(
+        (response) =>
+          setResults(
+            Array.isArray(
+              response?.results
+            )
+              ? response.results
+              : []
+          )
+      )
+      .catch(
+        (error) =>
+          console.error(error)
+      );
+
   }, []);
+
 
   const domains = [
     "Lighting & Electrical",
@@ -1731,103 +2484,181 @@ function Explorer({ lang }: { lang: Lang }) {
     "Environment & Energy",
   ];
 
+
   return (
     <Page
-      title={tx(lang, "explorer")}
-      intro="Browse the standards knowledge layer by domain."
+      title={tx(
+        lang,
+        "explorer"
+      )}
+      intro="Browse the Indian Standards knowledge layer by domain."
     >
+
       <div className="domain-grid">
-        {domains.map((d) => (
-          <Link
-            key={d}
-            to={`/search?domain=${encodeURIComponent(d)}`}
-            className="domain-card card"
-          >
-            {d}
-            <ChevronRight />
-          </Link>
-        ))}
+
+        {domains.map(
+          (domain) => (
+            <Link
+              key={domain}
+              to={`/search?domain=${encodeURIComponent(
+                domain
+              )}`}
+              className="domain-card card"
+            >
+              {domain}
+
+              <ChevronRight />
+            </Link>
+          )
+        )}
+
       </div>
 
-      {loading && (
-        <div className="loading">Loading standards…</div>
-      )}
 
       <div className="standard-list">
-        {results.map((s) => (
-          <Link
-            className="card standard-line"
-            to={`/standards/${s.id}`}
-            key={s.id}
-          >
-            <span className="is-number">
-              {s.is_number}
-            </span>
 
-            <span>
-              {localizedStandard(s, lang).title}
-            </span>
+        {results.map(
+          (standard) => (
+            <Link
+              className="card standard-line"
+              to={`/standards/${standard.id}`}
+              key={standard.id}
+            >
 
-            <ChevronRight />
-          </Link>
-        ))}
+              <span className="is-number">
+                {standard.is_number}
+              </span>
+
+              <span>
+                {
+                  localizedStandard(
+                    standard,
+                    lang
+                  ).title
+                }
+              </span>
+
+              <ChevronRight />
+
+            </Link>
+          )
+        )}
+
       </div>
+
     </Page>
   );
 }
 
-/* =========================================================
-   ANALYSIS PAGE
-========================================================= */
 
-function AnalysisPage({ lang }: { lang: Lang }) {
-  const [text, setText] = useState(
-    "cement for building construction"
+// ======================================================
+// ANALYSIS PAGE
+// ======================================================
+
+function AnalysisPage({
+  lang,
+}: {
+  lang: Lang;
+}) {
+
+  const [
+    text,
+    setText,
+  ] = useState(
+    examplePrompt
   );
 
-  const [result, setResult] = useState<any>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [
+    result,
+    setResult,
+  ] = useState<any>();
 
-  const run = async () => {
-    if (!text.trim()) return;
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-    setLoading(true);
-    setError("");
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-    try {
-      setResult(await api.analyze(text, lang));
-    } catch (e: any) {
-      setError(e?.message || "Analysis failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
+
+  const analyze =
+    async () => {
+
+      setError("");
+      setLoading(true);
+
+      try {
+
+        const response =
+          await api.analyze(
+            text,
+            lang
+          );
+
+        setResult(
+          response
+        );
+
+      } catch (error: any) {
+
+        setError(
+          error?.message ||
+            "Product analysis failed."
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
 
   return (
     <Page
-      title={tx(lang, "analysis")}
+      title={tx(
+        lang,
+        "analysis"
+      )}
       intro="Paste a product specification or procurement requirement."
     >
+
       <div className="card analysis-input">
+
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={7}
+          onChange={(e) =>
+            setText(
+              e.target.value
+            )
+          }
+          placeholder="Example: Need standards for cement used in building construction."
         />
 
         <button
           className="primary-btn"
-          onClick={run}
+          onClick={analyze}
           disabled={loading}
         >
-          {loading ? "Analyzing…" : tx(lang, "analyze")}
+          {loading
+            ? "Analyzing..."
+            : tx(
+                lang,
+                "analyze"
+              )}
         </button>
+
       </div>
 
+
       {error && (
-        <div className="alert danger">{error}</div>
+        <div className="alert danger">
+          {error}
+        </div>
       )}
+
 
       {result && (
         <AnalysisResult
@@ -1835,13 +2666,15 @@ function AnalysisPage({ lang }: { lang: Lang }) {
           result={result}
         />
       )}
+
     </Page>
   );
 }
 
-/* =========================================================
-   SETTINGS
-========================================================= */
+
+// ======================================================
+// SETTINGS
+// ======================================================
 
 function Settings({
   lang,
@@ -1850,46 +2683,70 @@ function Settings({
   lang: Lang;
   setLang: (x: Lang) => void;
 }) {
+
   return (
     <Page
-      title={tx(lang, "settings")}
+      title={tx(
+        lang,
+        "settings"
+      )}
       intro="Language and interface preferences."
     >
+
       <div className="card setting">
+
         <Languages />
 
         <div>
-          <h3>Interface language</h3>
+
+          <h3>
+            Interface language
+          </h3>
 
           <p>
-            Official IS numbers remain unchanged while
-            supported explanations can be localized.
+            Standard identifiers
+            such as IS numbers
+            remain unchanged.
           </p>
 
           <select
             value={lang}
             onChange={(e) =>
-              setLang(e.target.value as Lang)
+              setLang(
+                e.target.value as Lang
+              )
             }
           >
-            {languages.map((l) => (
-              <option
-                value={l.code}
-                key={l.code}
-              >
-                {l.label}
-              </option>
-            ))}
+
+            {languages.map(
+              (language) => (
+                <option
+                  value={
+                    language.code
+                  }
+                  key={
+                    language.code
+                  }
+                >
+                  {language.label}
+                </option>
+              )
+            )}
+
           </select>
+
         </div>
+
       </div>
+
     </Page>
   );
 }
 
-/* =========================================================
-   PAGE
-========================================================= */
+
+// ======================================================
+// PAGE WRAPPER
+// ======================================================
 
 function Page({
   title,
@@ -1900,106 +2757,258 @@ function Page({
   intro?: string;
   children: React.ReactNode;
 }) {
+
   return (
     <div className="page">
+
       <div className="page-title">
-        <span className="eyebrow">BIS SENSOR</span>
 
-        <h1>{title}</h1>
+        <span className="eyebrow">
+          BIS SENSOR
+        </span>
 
-        {intro && <p>{intro}</p>}
+        <h1>
+          {title}
+        </h1>
+
+        {intro && (
+          <p>
+            {intro}
+          </p>
+        )}
+
       </div>
 
       {children}
+
     </div>
   );
 }
 
-/* =========================================================
-   APP
-========================================================= */
+
+// ======================================================
+// VOICE
+// ======================================================
+
+function startVoice(
+  setText: (text: string) => void,
+  lang: Lang
+) {
+
+  const SpeechRecognition =
+    (window as any)
+      .SpeechRecognition ||
+    (window as any)
+      .webkitSpeechRecognition;
+
+
+  if (!SpeechRecognition) {
+
+    alert(
+      "Voice input is not supported by this browser."
+    );
+
+    return;
+  }
+
+
+  const recognition =
+    new SpeechRecognition();
+
+
+  recognition.lang =
+    lang === "hi"
+      ? "hi-IN"
+      : lang === "te"
+      ? "te-IN"
+      : lang === "ta"
+      ? "ta-IN"
+      : lang === "kn"
+      ? "kn-IN"
+      : lang === "mr"
+      ? "mr-IN"
+      : "en-IN";
+
+
+  recognition.interimResults =
+    false;
+
+
+  recognition.onresult =
+    (event: any) => {
+
+      const transcript =
+        event?.results?.[0]?.[0]
+          ?.transcript;
+
+      if (transcript) {
+        setText(
+          transcript
+        );
+      }
+    };
+
+
+  recognition.onerror =
+    (event: any) => {
+
+      console.error(
+        "Voice recognition error:",
+        event
+      );
+    };
+
+
+  recognition.start();
+}
+
+
+// ======================================================
+// APP
+// ======================================================
 
 export default function App() {
-  const [lang, setLangState] = useState<Lang>(
+
+  const [
+    lang,
+    setLangState,
+  ] = useState<Lang>(
     (localStorage.getItem(
       "bissensor-lang"
     ) as Lang) || "en"
   );
 
+
   useEffect(() => {
+
     localStorage.setItem(
       "bissensor-lang",
       lang
     );
 
-    (window as any).__bissensor_lang = lang;
+    (
+      window as any
+    ).__bissensor_lang =
+      lang;
 
-    document.documentElement.lang = lang;
+    document.documentElement.lang =
+      lang;
+
   }, [lang]);
 
-  const setLang = (x: Lang) => {
-    setLangState(x);
-  };
+
+  const setLang =
+    (language: Lang) =>
+      setLangState(
+        language
+      );
+
 
   return (
     <Layout
       lang={lang}
       setLang={setLang}
     >
+
       <Routes>
+
         <Route
           path="/"
-          element={<Home lang={lang} />}
+          element={
+            <Home
+              lang={lang}
+            />
+          }
         />
 
         <Route
           path="/search"
-          element={<SearchPage lang={lang} />}
+          element={
+            <SearchPage
+              lang={lang}
+            />
+          }
         />
 
         <Route
           path="/standards/:id"
-          element={<StandardDetails lang={lang} />}
+          element={
+            <StandardDetails
+              lang={lang}
+            />
+          }
         />
 
         <Route
           path="/analysis"
-          element={<AnalysisPage lang={lang} />}
+          element={
+            <AnalysisPage
+              lang={lang}
+            />
+          }
         />
 
         <Route
           path="/tender"
-          element={<TenderPage lang={lang} />}
+          element={
+            <TenderPage
+              lang={lang}
+            />
+          }
         />
 
         <Route
           path="/explorer"
-          element={<Explorer lang={lang} />}
+          element={
+            <Explorer
+              lang={lang}
+            />
+          }
         />
 
         <Route
           path="/compare"
-          element={<ComparePage lang={lang} />}
+          element={
+            <ComparePage
+              lang={lang}
+            />
+          }
         />
 
         <Route
           path="/recommend"
-          element={<RecommendationPage lang={lang} />}
+          element={
+            <RecommendationPage
+              lang={lang}
+            />
+          }
         />
 
         <Route
           path="/safety"
-          element={<SafetyPage lang={lang} />}
+          element={
+            <SafetyPage
+              lang={lang}
+            />
+          }
         />
 
         <Route
           path="/evidence"
-          element={<EvidencePage lang={lang} />}
+          element={
+            <EvidencePage
+              lang={lang}
+            />
+          }
         />
 
         <Route
           path="/dashboard"
-          element={<Dashboard lang={lang} />}
+          element={
+            <Dashboard
+              lang={lang}
+            />
+          }
         />
 
         <Route
@@ -2011,7 +3020,9 @@ export default function App() {
             />
           }
         />
+
       </Routes>
+
     </Layout>
   );
 }
