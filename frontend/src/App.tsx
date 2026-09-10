@@ -467,35 +467,25 @@ function Home({
               "Official, verified and AI-derived information remain distinct.",
               ShieldCheck,
             ],
-          ].map(
-            ([
-              title,
-              description,
-              Icon,
-            ]) => (
-              <div
-                className="card feature"
-                key={title}
-              >
-                <Icon />
+          
+{items.map((item) => {
+  const Icon = item.icon;
 
-                <h3>
-                  {title}
-                </h3>
-
-                <p>
-                  {description}
-                </p>
-              </div>
-            )
-          )}
-
-        </section>
+  return (
+    <button
+      key={item.label}
+      onClick={() => navigate(item.path)}
+    >
+      {typeof Icon === "string" ? (
+        <span>{Icon}</span>
+      ) : (
+        <Icon size={18} />
       )}
 
-    </div>
+      <span>{item.label}</span>
+    </button>
   );
-}
+})}
 
 
 // ======================================================
