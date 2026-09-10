@@ -14,7 +14,15 @@ function localizedStandard(s:any, lang:Lang) {
 
 const examplePrompt="Need standards for outdoor LED street lights for a government tender.";
 
-function Layout({lang,setLang}:{lang:Lang;setLang:(x:Lang)=>void}) {
+function Layout({
+  lang,
+  setLang,
+  children,
+}: {
+  lang: Lang;
+  setLang: (x: Lang) => void;
+  children: React.ReactNode;
+}) {
   const [mobile,setMobile]=useState(false);
   const loc=useLocation();
   const nav=[
