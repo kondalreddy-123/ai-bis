@@ -1,48 +1,59 @@
+const BASE = "https://ai-bis-sensor-1.onrender.com";
 
-const BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://ai-bis-sensor-1.onrender.com";
-
-async function request(path: string, options: RequestInit = {}) {
-  const headers = new Headers(options.headers);
-
-  if (!(options.body instanceof FormData)) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  const response = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers,
-  });
-
-  const text = await response.text();
-
-  let data: any = {};
-
+async function request(
+  path: string,
+  options: RequestInit = {}
+) {
   try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    data = { message: text };
-  }
+    const headers = new Headers(options.headers);
 
-  if (!response.ok) {
+    if (!(options.body instanceof FormData)) {
+      headers.set("Content-Type", "application/json");
+    }
+
+    const response = await fetch(`${BASE}${path}`, {
+      ...options,
+      headers,
+    });
+
+    const text = await response.text();
+
+    let data: any = {};
+
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { message: text };
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data?.detail ||
+        data?.message ||
+        `Server error: ${response.status}`
+      );
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("BIS SENSOR API ERROR:", error);
     throw new Error(
-      data?.detail ||
-      data?.message ||
-      `Request failed (${response.status})`
+      error?.message || "Unable to connect to BIS SENSOR backend."
     );
   }
-
-  return data;
 }
 
 export const api = {
-  health: () => request("/api/health"),
+  health: () =>
+    request("/api/health"),
 
   analyze: (text: string, language = "English") =>
     request("/api/analyze-specification", {
       method: "POST",
-      body: JSON.stringify({ text, language }),
+      body: JSON.stringify({
+        text,
+        language,
+      }),
     }),
 
   search: (query: string, domain?: string) =>
@@ -57,13 +68,18 @@ export const api = {
   recommend: (text: string, language = "English") =>
     request("/api/recommend-standards", {
       method: "POST",
-      body: JSON.stringify({ text, language }),
+      body: JSON.stringify({
+        text,
+        language,
+      }),
     }),
 
   compareStandards: (standard_ids: string[]) =>
     request("/api/compare-standards", {
       method: "POST",
-      body: JSON.stringify({ standard_ids }),
+      body: JSON.stringify({
+        standard_ids,
+      }),
     }),
 
   safety: (payload: any) =>
@@ -75,13 +91,19 @@ export const api = {
   explain: (text: string, language = "English") =>
     request("/api/explain-requirement", {
       method: "POST",
-      body: JSON.stringify({ text, language }),
+      body: JSON.stringify({
+        text,
+        language,
+      }),
     }),
 
   translate: (text: string, language: string) =>
     request("/api/translate", {
       method: "POST",
-      body: JSON.stringify({ text, language }),
+      body: JSON.stringify({
+        text,
+        language,
+      }),
     }),
 
   tender: (file: File) => {
